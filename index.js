@@ -5,6 +5,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000
 
@@ -361,6 +362,25 @@ async function run() {
             res.send(result)
         })
 
+        // post review
+        app.post('/reviews', async (req, res) => {
+            const reviewData = req.body;
+
+            console.log(reviewData);
+            if (!reviewData || !reviewData.name || !reviewData.designation|| !reviewData.review_text) {
+                return res.status(400).json({ message: 'Invalid review data. Please include text, rating, and userId.' });
+            }
+
+            try {
+                const result = await reviewCollection.insertOne(reviewData);
+                res.status(201).json({ message: 'Review added successfully', reviewId: result.insertedId });
+            } catch (error) {
+                console.error('Error adding review:', error);
+                res.status(500).json({ message: 'Failed to add review.' });
+            }
+        });
+
+
         // TODO: Contact Messages
         //get all Messages data from db
         app.get('/contact', verifyToken, verifyAdmin, async (req, res) => {
@@ -447,6 +467,40 @@ async function run() {
             } catch (error) {
                 console.error('Error fetching HR stats:', error);
                 res.status(500).send({ message: 'Internal Server Error' });
+            }
+        });
+
+
+        // AI helper
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        app.post('/ai/prompt', async (req, res) => {
+            const { prompt } = req.body;
+
+            if (!prompt) {
+                return res.status(400).json({ message: 'Prompt is required.' });
+            }
+
+            try {
+                const chat = model.startChat({
+                    history: [
+                        {
+                            role: "user",
+                            parts: [{ text: "Hello" }],
+                        },
+                        {
+                            role: "model",
+                            parts: [{ text: "Great to meet you. What would you like to know?" }],
+                        },
+                    ],
+                });
+
+                const result = await chat.sendMessage(prompt);
+                res.status(200).json({ response: result.response.text() });
+            } catch (error) {
+                console.error('Error during chat interaction:', error);
+                res.status(500).json({ message: 'Failed to fetch AI response.' });
             }
         });
 
