@@ -42,7 +42,7 @@ stripe
 
 ## How to Run Locally
 1. Clone the repository: `git clone https://github.com/younusFoysal/HR-Hub-Pro-V2-Server.git`
-2. Navigate to the project directory: `cd HR-Hub-Pro-Server`
+2. Navigate to the project directory: `cd HR-Hub-Pro-V2-Server`
 3. Install dependencies: `npm install`
 4. Set up environment variables as per `.env`.
 5. Start the server: `nodemon index.js` 
